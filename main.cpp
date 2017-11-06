@@ -125,6 +125,7 @@ int main( int argc, char** argv )
     board b = board(4);
     cout << b << endl;
     b.set_own(b.get_hex(0, 1), owner::P1);
+    b.set_own(b.get_hex(1,1), owner::P2);
     cout << b << endl;
     return 0;
     }
