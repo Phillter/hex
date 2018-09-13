@@ -5,6 +5,7 @@
 #include <ctime>
 #include <climits>
 #include <utility>
+#include <chrono>
 
 using namespace std;
 
@@ -347,10 +348,10 @@ public:
             }
         };
 
-    generate_game() 
+    int generate_game() 
         {
         bool is_p1 = true;
-        int r;
+        int r, candidate;
         int c = count(real_owners.begin(), real_owners.end(), owner::NONE);
         owners = real_owners;
         //fill board with random moves, alternating players
@@ -365,9 +366,50 @@ public:
                     r++;
                 }
             is_p1 ? owners[r] = owner::P1 : owners[r] = owner::P2;
+            if(i == 0 && is_p1 == false)
+                {//save off first move for computer move candidate
+                candidate = r;
+                }
             is_p1 = !is_p1;
             }
+        return candidate;
         };
+        
+        int find_best_move()
+            {
+            int current_candidate = 0;
+            vector<int> candidates(board_size * board_size - 1, 0);
+            board b = board(board_size);
+            time_t end_time;
+            auto start_time = time(NULL);
+            
+            while( difftime(end_time, start_time) < 1.0 )
+                {//generate a new game
+                current_candidate = generate_game();
+                b = board(this->get_game(), board_size);
+                if(b.check_for_win() == owner::P2)
+                    {
+                    //computer win, save candidate as potential winning move
+                    candidates[current_candidate]++;
+                    }
+                this->reset_game();
+                end_time = time(NULL);
+                }
+            //select move based on which hex as the first move when randomizing won the most games
+            //vector<int>::iterator it = find(candidates.begin(), candidates.end(), max_element(candidates.begin(), candidates.end()));
+            int biggest = 0;
+            int location = 0;
+            for(int i = 0; i < candidates.size(); i++)
+                {
+                if(candidates[i] > biggest)
+                    {
+                    biggest = candidates[i];
+                    location = i;
+                    }
+                }
+            return location;
+            }
+        
         reset_game()
             {
             //reset a generated game to the original state
@@ -430,25 +472,25 @@ int main( int argc, char** argv )
 //    for(int i = 0; i < b.get_size() * b.get_size(); i++)
 //            cout <<  i << b.get_hex(i).get_own() << endl;
     move_finder mf = move_finder(b);
-    board b2 = board(4);
-    int wins [2] = {0, 0};
-    owner winner;
-//    cout << b.check_for_win() << endl;
-    for(int x = 0; x < 100; x++)
-        {
-        mf.generate_game();
-        b2 = board(mf.get_game(), mf.get_board_size());
-        winner = b2.check_for_win();
-        if(winner == owner::P1)
-            wins[0]++;
-        else if(winner == owner::P2)
-            wins[1]++;
-        
-        cout << b2 << endl;
-        cout << winner << endl;
-        cout << "Wins: " << wins[0] << ", " << wins[1] << endl;
-        mf.reset_game();
-        }
+//    board b2 = board(4);
+//    int wins [2] = {0, 0};
+//    owner winner;
+////    cout << b.check_for_win() << endl;
+//    for(int x = 0; x < 100; x++)
+//        {
+//        mf.generate_game();
+//        b2 = board(mf.get_game(), mf.get_board_size());
+//        winner = b2.check_for_win();
+//        if(winner == owner::P1)
+//            wins[0]++;
+//        else if(winner == owner::P2)
+//            wins[1]++;
+//        
+//        cout << b2 << endl;
+//        cout << winner << endl;
+//        cout << "Wins: " << wins[0] << ", " << wins[1] << endl;
+//        mf.reset_game();
+//        }
     return 0;
     }
 
