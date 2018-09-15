@@ -186,7 +186,7 @@ public:
     
     gamehex get_hex(int n)
         {
-        return this->hexes[n/size][n%size];
+        return this->hexes[n%size][n/size];
         }
     
     int hex_to_num(gamehex& h)
@@ -287,11 +287,11 @@ protected:
                 || ( h.get_own() == owner::P2 && h.get_y() == size - 1 ))
             {
             //we have a winner!
-            for( int& n : check)
-                {
-                cout << n << ", ";
-                }
-            cout << endl;
+//            for( int& n : check)
+//                {
+//                cout << n << ", ";
+//                }
+//            cout << endl;
             return h.get_own();
             }
         else
@@ -350,7 +350,7 @@ public:
 
     int generate_game() 
         {
-        bool is_p1 = true;
+        bool is_p1 = false;
         int r, candidate;
         int c = count(real_owners.begin(), real_owners.end(), owner::NONE);
         owners = real_owners;
@@ -377,15 +377,16 @@ public:
         
         int find_best_move()
             {
-            int current_candidate = 0;
+            int current_candidate = 0, games = 0;
             vector<int> candidates(board_size * board_size - 1, 0);
             board b = board(board_size);
-            time_t end_time;
-            auto start_time = time(NULL);
+            time_t end_time = time(NULL);
+            auto start_time = end_time;
             
-            while( difftime(end_time, start_time) < 1.0 )
+            while( difftime(end_time, start_time) < 5.0 )
                 {//generate a new game
                 current_candidate = generate_game();
+                games++;
                 b = board(this->get_game(), board_size);
                 if(b.check_for_win() == owner::P2)
                     {
@@ -395,6 +396,13 @@ public:
                 this->reset_game();
                 end_time = time(NULL);
                 }
+            cout << "find_best_move - Games played: " << games << endl;
+            cout << "find_best_move - candidate move win counts: ";
+            for(int i = 0; i < candidates.size(); i++)
+                {
+                cout << i << ":" << candidates[i] << ", ";
+                }
+            cout << endl;
             //select move based on which hex as the first move when randomizing won the most games
             //vector<int>::iterator it = find(candidates.begin(), candidates.end(), max_element(candidates.begin(), candidates.end()));
             int biggest = 0;
@@ -434,18 +442,19 @@ protected:
 int main( int argc, char** argv )
     {
     srand(time(NULL));
-    board b = board(4);
-    b.set_own(b.get_hex(0, 1), owner::P1);
-    b.set_own(b.get_hex(0, 3), owner::P1);
-    b.set_own(b.get_hex(1, 1), owner::P1);
-//    b.set_own(b.get_hex(2, 1), owner::P1);
+    board b = board(1);
+//    b.set_own(b.get_hex(0, 1), owner::P1);
+//    b.set_own(b.get_hex(0, 3), owner::P1);
+//    b.set_own(b.get_hex(1, 1), owner::P1);
+//    b.set_own(b.get_hex(3, 1), owner::P1);
 //    b.set_own(b.get_hex(3, 0), owner::P1);
     
-    b.set_own(b.get_hex(1, 0), owner::P2);
-    b.set_own(b.get_hex(1, 2), owner::P2);
-    b.set_own(b.get_hex(1, 3), owner::P2);
+//    b.set_own(b.get_hex(2, 0), owner::P2);
+//    b.set_own(b.get_hex(1, 2), owner::P2);
+//    b.set_own(b.get_hex(1, 3), owner::P2);
+//    b.set_own(b.get_hex(3, 0), owner::P2);
 //    
-    cout << b << endl;
+    
 //    vector<gamehex> adj;
 //    gamehex hex;
 //    for( int j = 0; j < b.get_size(); j++)
@@ -472,6 +481,48 @@ int main( int argc, char** argv )
 //    for(int i = 0; i < b.get_size() * b.get_size(); i++)
 //            cout <<  i << b.get_hex(i).get_own() << endl;
     move_finder mf = move_finder(b);
+    int player_move, comp_move, board_size = 4;
+    bool player_turn = true, restart = true;
+    char play_again_check;
+    owner winner_check = owner::NONE;
+    while(play_again_check != 'q')
+        {
+        if(restart)
+            {
+            winner_check = owner::NONE;
+            cout << "Type a number to create an X by X board: ";
+            cin >> board_size;
+            b = board(board_size);
+            restart = false;
+            }
+        cout << b << endl;
+        if(player_turn) 
+            {
+            cout << "Type a number between 0 and " << b.get_size() * b.get_size() - 1 << endl;
+            cin >> player_move;
+            b.set_own(b.get_hex(player_move), owner::P1);
+            }
+        else
+            {
+            mf = move_finder(b);
+            comp_move = mf.find_best_move();
+            cout << "Best move for this board is: " << comp_move << endl;
+            b.set_own(b.get_hex(comp_move), owner::P2);
+            }
+        player_turn = !player_turn;
+        
+        winner_check = b.check_for_win();
+        if(winner_check != owner::NONE)
+            {
+            cout << winner_check << " wins this game!" << endl;
+            cout << "Play again? y for Yes or q for Quit" << endl;
+            cin >> play_again_check;
+            if(play_again_check == 'y')
+                {
+                restart = true;
+                }
+            }        
+        }
 //    board b2 = board(4);
 //    int wins [2] = {0, 0};
 //    owner winner;
